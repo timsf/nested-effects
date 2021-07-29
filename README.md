@@ -31,7 +31,7 @@
 2. Clone the repository
 
     ```shell
-    git clone https://github.com/timsf/crossed-effects.git
+    git clone https://github.com/timsf/nested-effects.git
     ```
 
 3. Create a virtual environment and install dependencies

@@ -4,19 +4,20 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
-jupyter = "*"
 pyarrow = "*"
-pystan = "==2.19.1.1"
-seaborn = "*"
 pylint = "*"
+pystan = "==2.19.1.1"
 pytest = "*"
 rope = "*"
 
 [packages]
+jupyter = "*"
+matplotlib = "*"
 numpy = "*"
 pandas = "*"
-scipy = "*"
+seaborn = "*"
 scikit-sparse = "*"
+scipy = "*"
 
 [requires]
 python_version = "3.8"
