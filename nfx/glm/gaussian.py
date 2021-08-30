@@ -18,7 +18,7 @@ def sample_posterior(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarra
                                        init, bprop, ome)
 
 
-def eval_part(eta: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def eval_part(eta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     return np.square(eta) / 2, eta, np.ones_like(eta)
 

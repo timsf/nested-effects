@@ -1,13 +1,10 @@
-import itertools as it
-from typing import NamedTuple, Optional
+from typing import List, NamedTuple, Tuple
 
 import numpy as np
 
 import scipy.linalg
 import scipy.sparse
 import sksparse.cholmod
-
-import nfx.misc.linalg
 
 
 class LmSuffStat(NamedTuple):
@@ -18,8 +15,8 @@ class LmSuffStat(NamedTuple):
     cxy: np.ndarray
 
 
-def sample_nested_lm(y: LmSuffStat, ik: np.ndarray, mu0: np.ndarray, tau0: np.ndarray, tau: [np.ndarray], lam: np.ndarray, 
-                     ome: np.random.Generator) -> [np.ndarray]:
+def sample_nested_lm(y: LmSuffStat, ik: List[np.ndarray], mu0: np.ndarray, tau0: np.ndarray, tau: List[np.ndarray], 
+                     lam: np.ndarray, ome: np.random.Generator) -> List[np.ndarray]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -30,18 +27,18 @@ def sample_nested_lm(y: LmSuffStat, ik: np.ndarray, mu0: np.ndarray, tau0: np.nd
     z_flat = ome.standard_normal(len(prior_weight_flat))
     bet_flat = lcf_prec_flat.solve_Lt(lcf_prec_flat.solve_L(post_weight_flat + prior_weight_flat, False) + z_flat, False)
 
-    bet = [np.reshape(bet_, (jk_, len(mu0))) for jk_, bet_ in zip(jk, np.split(bet_flat, np.cumsum(jk[:-1]) * len(mu0)))]
+    bet = [np.reshape(bet_, (jk_, len(mu0))) for jk_, bet_ 
+           in zip(jk, np.split(bet_flat, np.cumsum(jk[:-1]) * len(mu0)))]
     return bet
 
 
-def prepare_sparse_indices(ik: np.ndarray, dim: int) -> (np.ndarray, np.ndarray):
+def prepare_sparse_indices(ik: List[np.ndarray], dim: int) -> Tuple[np.ndarray, np.ndarray]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
     on_row_block_ix = np.arange(sum(jk))
-    on_col_block_ix = np.arange(sum(jk))
-
-    block_offsets = np.hstack([ik_ + jk_ for ik_, jk_ in zip(ik + [np.int64(np.zeros(max(ik[-1] + 1)))], np.cumsum(jk))])
+    block_offsets = np.hstack([ik_ + jk_ for ik_, jk_ 
+                               in zip(ik + [np.int_(np.zeros(max(ik[-1] + 1)))], np.cumsum(jk))])
     off_row_block_ix = block_offsets
     off_col_block_ix = on_row_block_ix[:-1] 
 
@@ -55,7 +52,7 @@ def prepare_sparse_indices(ik: np.ndarray, dim: int) -> (np.ndarray, np.ndarray)
     return row_ix, col_ix
 
 
-def fill_precision(y: LmSuffStat, ik: np.ndarray, tau0: np.ndarray, tau: [np.ndarray], lam: np.ndarray
+def fill_precision(y: LmSuffStat, ik: List[np.ndarray], tau0: np.ndarray, tau: List[np.ndarray], lam: np.ndarray
                    ) -> scipy.sparse.coo_matrix:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]

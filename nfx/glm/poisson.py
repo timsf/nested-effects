@@ -15,7 +15,7 @@ def sample_posterior(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.n
     return gibbs.sample_posterior(y1, n, x, ik, eval_part, mu0, tau0, prior_n_tau, prior_est_tau, init, bprop, ome)
 
 
-def eval_part(eta: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def eval_part(eta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     fitted = np.exp(eta)
     fitted = np.where(np.isinf(fitted), np.nan, fitted)

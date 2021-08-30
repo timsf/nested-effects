@@ -1,16 +1,21 @@
+from typing import List
+
 import numpy as np
 
 import nfx.bprop.dense
 import nfx.sla.dense
 
 
-def process_bprop(bet0: np.ndarray, tau_: np.ndarray, ik: np.ndarray, iik: [[np.ndarray]]) -> [nfx.bprop.dense.LmSuffStat]:
+def process_bprop(bet0: np.ndarray, tau_: np.ndarray, ik: List[np.ndarray], iik: List[List[np.ndarray]]
+                  ) -> List[nfx.bprop.dense.LmSuffStat]:
 
     eta, s1, s2 = zip(*[(len(iik_), np.mean(bet0[iik_], 0), np.sum(np.mean(bet0[iik_], 0) ** 2)) for iik_ in iik[0]])
-    return [nfx.bprop.dense.LmSuffStat(s2_, n_ * tau_, n_ * (tau_ @ s1_), len(s1_)) for n_, s1_, s2_ in zip(eta, s1, s2)]
+    return [nfx.bprop.dense.LmSuffStat(s2_, n_ * tau_, n_ * (tau_ @ s1_), len(s1_)) 
+            for n_, s1_, s2_ in zip(eta, s1, s2)]
 
 
-def process_sla(bet0: np.ndarray, tau_: np.ndarray, ik: np.ndarray, iik: [[np.ndarray]]) -> nfx.sla.dense.LmSuffStat:
+def process_sla(bet0: np.ndarray, tau_: np.ndarray, ik: List[np.ndarray], iik: List[List[np.ndarray]]
+                ) -> nfx.sla.dense.LmSuffStat:
     
     eta = np.array([len(iik_) for iik_ in iik[0]])
     y = np.array([np.mean(bet0[iik_], 0) for iik_ in iik[0]])
@@ -22,6 +27,6 @@ def process_sla(bet0: np.ndarray, tau_: np.ndarray, ik: np.ndarray, iik: [[np.nd
     return nfx.sla.dense.LmSuffStat(row_ix, col_ix, n_offspring_flat, cxx_flat, cxy_flat)
 
 
-def reverse_edges(ik: [np.ndarray]) -> [[np.ndarray]]:
+def reverse_edges(ik: List[np.ndarray]) -> List[List[np.ndarray]]:
 
     return [[np.where(ik_ == i)[0] for i in range(max(ik_) + 1)] for ik_ in ik]

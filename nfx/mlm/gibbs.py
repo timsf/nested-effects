@@ -8,9 +8,11 @@ import nfx.bprop.dense
 import nfx.sla.dense
 
 
+LatentFunc = Callable[[np.ndarray, np.random.Generator], np.ndarray]
+
+
 def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
-                     sample_latent: Callable[[np.ndarray, np.random.Generator], np.ndarray], 
-                     mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
+                     sample_latent: LatentFunc, mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
                      prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]], 
                      prior_n_lam: Optional[float], prior_est_lam: Optional[float],
                      init: Optional[Tuple[List[np.ndarray], List[np.ndarray], float, np.ndarray]], bprop: bool,
@@ -57,7 +59,7 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
 
 
 def update_resid(y: np.ndarray, x: np.ndarray, bet: np.ndarray, eta: np.ndarray, 
-                 prior_n: np.ndarray, prior_est: np.ndarray, ome: np.random.Generator) -> float:
+                 prior_n: float, prior_est: float, ome: np.random.Generator) -> float:
 
     ssq_eps = np.sum(np.square(y - bet @ x.T) * eta)
     post_n = prior_n + np.prod(y.shape)
@@ -66,6 +68,6 @@ def update_resid(y: np.ndarray, x: np.ndarray, bet: np.ndarray, eta: np.ndarray,
 
 
 def update_latent(y: np.ndarray, x: np.ndarray, bet: np.ndarray, lam: float, 
-                  sample_latent: Callable[[np.ndarray], np.ndarray], ome: np.random.Generator) -> float:
+                  sample_latent: LatentFunc, ome: np.random.Generator) -> np.ndarray:
 
     return sample_latent(np.square(y - bet @ x.T) * lam, ome)

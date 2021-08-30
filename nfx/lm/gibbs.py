@@ -40,16 +40,14 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
 
     iik = nfx.lm.process.reverse_edges(ik)
     dim_y, cyy, cxx, cxy = nfx.lm.process.eval_suff_stat(y, x)
-    if bprop:
-        ysuff = nfx.lm.process.process_bprop(dim_y, cyy, cxx, cxy)
-    if not bprop:
-        ysuff = nfx.lm.process.process_sla(dim_y, cxx, cxy, ik, iik)
+    ysuff_bprop = nfx.lm.process.process_bprop(dim_y, cyy, cxx, cxy)
+    ysuff_sla = nfx.lm.process.process_sla(dim_y, cxx, cxy, ik, iik)
 
     while True:
         if bprop:
-            bet = nfx.bprop.dense.sample_nested_lm(ysuff, ik, iik, mu0, tau0, tau, lam, ome)
+            bet = nfx.bprop.dense.sample_nested_lm(ysuff_bprop, ik, iik, mu0, tau0, tau, lam, ome)
         else:
-            bet = nfx.sla.dense.sample_nested_lm(ysuff, ik, mu0, tau0, tau, lam, ome)
+            bet = nfx.sla.dense.sample_nested_lm(ysuff_sla, ik, mu0, tau0, tau, lam, ome)
         if not np.all(np.isinf(prior_n_tau)):
             tau = update_scale(ik, bet, prior_n_tau, prior_est_tau, ome)
         if not np.all(np.isinf(prior_n_lam)):
@@ -60,8 +58,8 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
 def update_scale(ik: List[np.ndarray], bet: List[np.ndarray], prior_n: np.ndarray, prior_est: List[np.ndarray], 
                  ome: np.random.Generator) -> List[np.ndarray]:
 
-    gam = [bet1 - bet0[ik_] for bet1, bet0, ik_ in zip(bet, bet[1:], ik + [np.int64(np.zeros(len(bet[-2])))])]
-    post_n = prior_n + np.int64([len(ik_) for ik_ in ik] + [max(ik[-1]) + 1])
+    gam = [bet1 - bet0[ik_] for bet1, bet0, ik_ in zip(bet, bet[1:], ik + [np.int_(np.zeros(len(bet[-2])))])]
+    post_n = prior_n + np.int_([len(ik_) for ik_ in ik] + [max(ik[-1]) + 1])
     post_est = [prior_est_
                     if np.isinf(prior_n_)
                     else post_n_ * nfx.misc.linalg.swm_update(prior_est_ / prior_n_, gam_, gam_)

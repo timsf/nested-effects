@@ -10,17 +10,17 @@ import nfx.bprop.dense
 import nfx.sla.dense
 
 
-PartFunc = Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]]
-BaseFunc = Callable[[np.ndarray, np.ndarray, np.ndarray, float], Tuple[float, float]]
+PartFunc = Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]
+BaseFunc = Callable[[np.ndarray, np.ndarray, np.ndarray, float], Tuple[float, float, float]]
 
 
-def sample_disp_posterior(y1: np.ndarray, y2: Optional[np.ndarray], n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
+def sample_disp_posterior(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
                           eval_part: PartFunc, eval_base: BaseFunc,
                           mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
                           prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]],
                           prior_n_phi: Optional[float], prior_est_phi: Optional[float],
-                          init: Tuple[List[np.ndarray], List[np.ndarray], float], bprop: bool, ome: np.random.Generator
-                          ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], float]]:
+                          init: Optional[Tuple[List[np.ndarray], List[np.ndarray], float]], bprop: bool, 
+                          ome: np.random.Generator) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], float]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -48,18 +48,18 @@ def sample_disp_posterior(y1: np.ndarray, y2: Optional[np.ndarray], n: np.ndarra
         tau, phi = init[1:]
 
     iik = nfx.glm.process.reverse_edges(ik)
-    sampler = nfx.glm.metropolis.LatentGaussSampler(np.sum(n, 1), len(mu0))
+    sampler = nfx.glm.metropolis.LatentGaussSampler(y1.shape[0], x.shape[1])
 
     while True:
         bet0 = update_leaves(y1, n, x, ik, bet0, bet, tau, phi, eval_part, sampler, ome)
         if bprop:
-            asuff = nfx.glm.process.process_bprop(bet0, tau[0], ik, iik)
+            asuff_bprop = nfx.glm.process.process_bprop(bet0, tau[0], ik, iik)
             bet = nfx.bprop.dense.sample_nested_lm(
-                asuff, ik[1:], iik[1:], mu0, tau0, tau[1:], np.ones(len(iik[0])), ome)
+                asuff_bprop, ik[1:], iik[1:], mu0, tau0, tau[1:], np.ones(len(iik[0])), ome)
         else:
-            asuff = nfx.glm.process.process_sla(bet0, tau[0], ik, iik)
+            asuff_sla = nfx.glm.process.process_sla(bet0, tau[0], ik, iik)
             bet = nfx.sla.dense.sample_nested_lm(
-                asuff, ik[1:], mu0, tau0, tau[1:], np.ones(len(iik[0])), ome)
+                asuff_sla, ik[1:], mu0, tau0, tau[1:], np.ones(len(iik[0])), ome)
         if not np.all(np.isinf(prior_n_tau)):
             tau = nfx.lm.gibbs.update_scale(ik, [bet0] + bet, prior_n_tau, prior_est_tau, ome)
         if not np.isinf(prior_n_phi):
@@ -70,20 +70,20 @@ def sample_disp_posterior(y1: np.ndarray, y2: Optional[np.ndarray], n: np.ndarra
 def sample_posterior(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray], eval_part: PartFunc,
                      mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
                      prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]],
-                     init: Tuple[List[np.ndarray], List[np.ndarray]], bprop: bool, ome: np.random.Generator
+                     init: Optional[Tuple[List[np.ndarray], List[np.ndarray]]], bprop: bool, ome: np.random.Generator
                      ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray]]]:
 
-    def eval_base(x): return (0, 0)
+    def eval_base(_, __, ___, ____): return (0, 0, 0)
     return (the[:-1] for the in
-            sample_disp_posterior(y1, None, n, x, ik, eval_part, eval_base, prior_n_tau, mu0, tau0,
+            sample_disp_posterior(y1, np.empty_like(y1), n, x, ik, eval_part, eval_base, prior_n_tau, mu0, tau0,
                                   prior_est_tau, np.inf, 1, init + (1,) if init is not None else init, bprop, ome))
 
 
-def update_leaves(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: np.ndarray,
-                  bet0: np.ndarray, bet: np.ndarray, tau: np.ndarray, phi: float, eval_part: PartFunc,
+def update_leaves(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
+                  bet0: np.ndarray, bet: List[np.ndarray], tau: List[np.ndarray], phi: float, eval_part: PartFunc,
                   sampler: nfx.glm.metropolis.LatentGaussSampler, ome: np.random.Generator) -> np.ndarray:
 
-    def eval_log_f(b0: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    def eval_log_f(b0: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
         log_p, d_log_p, d2_log_p = eval_loglik(y1, n, x, b0, eval_part)
         return log_p / phi, d_log_p / phi, d2_log_p / phi
 
@@ -122,13 +122,13 @@ def update_dispersion(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarr
 
 
 def eval_loglik(y1: np.ndarray, n: np.ndarray, x: np.ndarray, bet0: np.ndarray, eval_part: PartFunc
-                ) -> Tuple[np.ndarray, np.ndarray]:
+                ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
 
     eta = bet0 @ x.T
     part, d_part, d2_part = eval_part(eta)
     log_f = np.sum(y1 * eta - n * part, 1)
     d_log_f = (y1 - n * d_part) @ x
-    d2_log_f = -(x.T * np.nanmean(n * d2_part, 0)) @ x
+    d2_log_f = -(n * d2_part) @ np.square(x)
     return log_f, d_log_f, d2_log_f
 
 

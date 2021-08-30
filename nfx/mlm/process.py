@@ -8,11 +8,13 @@ import nfx.sla.dense
 
 def process_bprop(y: np.ndarray, x: np.ndarray, eta: np.ndarray) -> List[nfx.bprop.dense.LmSuffStat]:
 
-    ysuff = [nfx.bprop.dense.LmSuffStat(np.sum(np.square(y_)), (x.T * eta_) @ x, (y_ * eta_) @ x, len(y_)) for y_, eta_ in zip(y, eta)]
+    ysuff = [nfx.bprop.dense.LmSuffStat(np.sum(np.square(y_)), (x.T * eta_) @ x, (y_ * eta_) @ x, len(y_)) 
+             for y_, eta_ in zip(y, eta)]
     return ysuff
 
 
-def process_sla(y: np.ndarray, x: np.ndarray, eta: np.ndarray, ik: np.ndarray, iik: List[List[np.ndarray]]) -> nfx.sla.dense.LmSuffStat:
+def process_sla(y: np.ndarray, x: np.ndarray, eta: np.ndarray, ik: List[np.ndarray], iik: List[List[np.ndarray]]
+                ) -> nfx.sla.dense.LmSuffStat:
     
     n_offspring = [[len(iik__) for iik__ in iik_] for iik_ in iik] + [[len(iik[-1])]]
     n_offspring_flat = np.repeat(np.hstack(n_offspring), x.shape[1] ** 2)

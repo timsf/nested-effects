@@ -10,7 +10,7 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
                      prior_n_tau: np.ndarray = None, prior_est_tau: List[np.ndarray] = None,
                      prior_n_lam: float = 1, prior_est_lam: float = 1,
                      init: Tuple[List[np.ndarray], List[np.ndarray], float, np.ndarray] = None, 
-                     bprop: float = False, ome: np.random.Generator = np.random.default_rng()
+                     bprop: bool = False, ome: np.random.Generator = np.random.default_rng()
                      ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], float, np.ndarray]]:
 
     def bound_sample_latent(sq_eps_: np.ndarray, ome_: np.random.Generator) -> np.ndarray:
