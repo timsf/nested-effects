@@ -1,66 +1,87 @@
 from typing import Callable, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 
-def sample_marginal(x: np.ndarray, mu: np.ndarray, tau: np.ndarray, eta: np.ndarray, delt: np.ndarray,
-                    f_log_f: Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]],
-                    ome: np.random.Generator) -> Tuple[np.ndarray, np.ndarray]:
-
-    l_tau, u = np.linalg.eigh(tau)
-    q = tau - eta
-    l_q, v = np.linalg.eigh(q)
-    l_b = l_q[np.newaxis] + 1 / delt[:, np.newaxis]
-    l_a = 1 / l_b
-    l_cov = l_a + np.square(l_a) / delt[:, np.newaxis]
-    l_prec = 1 / l_cov
-
-    x_log_f, dx_log_f, d2x_log_f = f_log_f(x)
-    x_log_p = x_log_f + eval_norm_prec(x, mu, u, l_tau[np.newaxis])
-    mean_x = (((x / delt[:, np.newaxis] - x @ eta + mu @ tau + dx_log_f) @ v) * l_a) @ v.T
-    y = sample_norm_cov(mean_x, v, l_cov, ome)
-
-    y_log_f, dy_log_f, _ = f_log_f(y)
-    y_log_p = y_log_f + eval_norm_prec(y, mu, u, l_tau[np.newaxis])
-    mean_y = (((y / delt[:, np.newaxis] - y @ eta + mu @ tau + dy_log_f) @ v) * l_a) @ v.T
-
-    log_post_odds = y_log_p - x_log_p
-    log_prop_odds = eval_norm_prec(y, mean_x, v, l_prec) - eval_norm_prec(x, mean_y, v, l_prec)
-    acc_prob = np.exp([min(0, lp) for lp in np.where(~np.isnan(log_post_odds), log_post_odds, -np.inf) - np.where(~np.isnan(log_prop_odds), log_prop_odds, np.inf)])
-
-    return np.where(ome.uniform(size=x.shape[0]) < acc_prob, y.T, x.T).T, acc_prob, d2x_log_f
+FloatArr = npt.NDArray[np.float_]
 
 
-def eval_norm_prec(x: np.ndarray, mu: np.ndarray, u: np.ndarray, l_tau: np.ndarray) -> np.ndarray:
+def sample(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
+           f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]], ome: np.random.Generator
+           ) -> Tuple[FloatArr, FloatArr]:
 
-    mah = np.sum(np.square(((x - mu) @ u) * np.sqrt(l_tau)), 1)
-    return (np.sum(np.log(l_tau), 1) - mah - x.shape[1] * np.log(2 * np.pi)) / 2
+    x_log_p, mean_x, prec_x = ascend(x, mu, tau, sig, f_log_p)
+    y = ome.normal(mean_x, 1 / np.sqrt(prec_x))
+    y_log_p, mean_y, prec_y = ascend(y, mu, tau, sig, f_log_p)
+    return accept_reject(x, y, x_log_p, y_log_p, mean_x, mean_y, prec_x, prec_y, mu, tau, ome)
 
 
-def sample_norm_cov(mu: np.ndarray, u: np.ndarray, l_sig: np.ndarray, ome: np.random.Generator) -> np.ndarray:
+def ascend(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
+                  f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]]
+                  ) -> Tuple[FloatArr, FloatArr, FloatArr]:
 
-    z = ome.standard_normal(mu.shape)
-    return mu + (z * np.sqrt(l_sig)) @ u.T
+    x_log_p, dx_log_p, d2x_log_p = f_log_p(x)
+    a = 1 / (np.ones_like(x) / sig + tau - d2x_log_p)
+    x_hess = 1 / (a ** 2 / sig + a)
+    x_prime = (dx_log_p + tau * mu + x * (1 / sig - d2x_log_p)) * a
+    return x_log_p, x_prime, x_hess
+
+
+def accept_reject(x: FloatArr, y: FloatArr, x_log_p: FloatArr, y_log_p: FloatArr,
+                  mean_x: FloatArr, mean_y: FloatArr, prec_x: FloatArr, prec_y: FloatArr,
+                  mu: FloatArr, tau: FloatArr, ome: np.random.Generator) -> Tuple[FloatArr, FloatArr]:
+
+    log_lik_ratio = y_log_p - x_log_p
+    log_prior_odds = eval_norm(y, mu, tau) - eval_norm(x, mu, tau)
+    log_prop_odds = eval_norm(y, mean_x, prec_x) - eval_norm(x, mean_y, prec_y)
+    log_prop_odds_clean = np.where(np.isnan(log_prop_odds), np.inf, log_prop_odds)
+    acc_prob = np.exp([min(0, lp) for lp in log_lik_ratio + log_prior_odds - log_prop_odds_clean])
+    return np.where(ome.uniform(size=len(acc_prob)) < acc_prob, y.T, x.T).T, acc_prob
+
+
+def eval_norm(x: FloatArr, mu: FloatArr, tau: FloatArr) -> FloatArr:
+
+    d = (x - mu) ** 2 * tau
+    kern = -d / 2
+    cons = (np.log(tau) - np.log(2 * np.pi)) / 2
+    return cons + kern
+
+
+def cond_norm(x: FloatArr, mu: FloatArr, tau: FloatArr, update: int):
+
+    sig = np.linalg.inv(tau)
+    x_cl = np.delete(x, update, 1)
+    mu_cl = np.delete(mu, update, 1)
+    tau_cl_cl = np.linalg.inv(np.delete(np.delete(sig, update, 0), update, 1))
+    coefs = np.delete(sig[update], update) @ tau_cl_cl
+    return mu[:, update] - coefs @ (mu_cl - x_cl).T, tau[update, update]
 
 
 class LatentGaussSampler(object):
 
-    def __init__(self, n: np.array, l: float, opt_prob: float = .5):
+    def __init__(self, j: int, l: int, opt_prob: float = .5):
 
-        self.n = n
-        self.emp_prob = [np.ones(len(n))]
-        self.step = [-np.log(n)]
+        self.emp_prob = [[np.ones(j)] for _ in range(l)]
+        self.step = [[np.zeros(j)] for _ in range(l)]
         self.opt_prob = opt_prob
-        self.eta = np.zeros((l, l))
 
-    def sample(self, x_nil: np.ndarray, mu: np.ndarray, tau: np.ndarray,
-               f_log_f: Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray]], ome: np.random.Generator) -> np.ndarray:
+    def sample(self, x_nil: FloatArr, mu: FloatArr, tau: FloatArr,
+               f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]], ome: np.random.Generator
+               ) -> FloatArr:
 
-        try:
-            x_prime, emp_prob, hess = sample_marginal(x_nil, mu, tau, self.eta, np.exp(self.step[-1]), f_log_f, ome)
-        except np.linalg.LinAlgError:
-            x_prime, emp_prob, hess = x_nil, np.zeros(x_nil.shape[0]), self.eta
-        self.emp_prob.append(emp_prob)
-        self.step.append(self.step[-1] + (emp_prob - self.opt_prob) / np.sqrt(len(self.emp_prob)))
-        self.eta = self.eta + (hess - self.eta) / np.sqrt(len(self.emp_prob))
+        def f_log_p_cond(x_prime_cond: FloatArr):
+            x_prime_ = np.copy(x_prime)
+            x_prime_[:, l] = x_prime_cond
+            log_p, d_log_p, d2_log_p = f_log_p(x_prime_)
+            return log_p, d_log_p[:, l], d2_log_p[:, l]
+
+        x_prime = np.copy(x_nil)
+        for l in range(x_nil.shape[1]):
+            mu_cond, tau_cond = cond_norm(x_nil, mu, tau, l)
+            x_prime_cond, emp_prob = sample(x_nil[:, l], mu_cond, np.repeat(tau_cond, len(mu_cond)), 
+                                            np.exp(self.step[l][-1]), f_log_p_cond, ome)
+            x_prime[:, l] = x_prime_cond
+            self.emp_prob[l].append(emp_prob)
+            self.step[l].append(self.step[l][-1] + (emp_prob - self.opt_prob) / np.sqrt(len(self.emp_prob[l])))
         return x_prime
