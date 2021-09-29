@@ -1,21 +1,26 @@
 from typing import Iterator, List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 from nfx.glm import gibbs
 
 
-def sample_posterior(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
-                     mu0: np.ndarray = None, tau0: np.ndarray = None,
-                     prior_n_tau: np.ndarray = None, prior_est_tau: List[np.ndarray] = None,
-                     init: Tuple[List[np.ndarray], List[np.ndarray]] = None, bprop: bool = False,
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+
+
+def sample_posterior(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr],
+                     mu0: FloatArr = None, tau0: FloatArr = None,
+                     prior_n_tau: FloatArr = None, prior_est_tau: List[FloatArr] = None,
+                     init: Tuple[List[FloatArr], List[FloatArr]] = None, bprop: bool = False,
                      ome: np.random.Generator = np.random.default_rng()
-                     ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray]]]:
+                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr]]]:
 
     return gibbs.sample_posterior(y1, n, x, ik, eval_part, mu0, tau0, prior_n_tau, prior_est_tau, init, bprop, ome)
 
 
-def eval_part(eta: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def eval_part(eta: FloatArr) -> Tuple[FloatArr, FloatArr, FloatArr]:
 
     fitted = np.exp(eta)
     fitted = np.where(np.isinf(fitted), np.nan, fitted)

@@ -1,31 +1,36 @@
 from typing import List, NamedTuple
 
 import numpy as np
+import numpy.typing as npt
 
 import scipy.linalg
 
 
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+
+
 class F2V(NamedTuple):
-    p: np.ndarray
-    u: np.ndarray
+    p: FloatArr
+    u: FloatArr
 
 
 class V2F(NamedTuple):
-    p: np.ndarray
-    u: np.ndarray
-    cf_cov: np.ndarray
+    p: FloatArr
+    u: FloatArr
+    cf_cov: FloatArr
 
 
 class LmSuffStat(NamedTuple):
     cyy: float
-    cxx: np.ndarray
-    cxy: np.ndarray
+    cxx: FloatArr
+    cxy: FloatArr
     dim_y: int
     
 
-def sample_nested_lm(y: List[LmSuffStat], ik: List[np.ndarray], iik: List[List[np.ndarray]], 
-                     mu0: np.ndarray, tau0: np.ndarray, 
-                     tau: List[np.ndarray], lam: np.ndarray, ome: np.random.Generator) -> List[np.ndarray]:
+def sample_nested_lm(y: List[LmSuffStat], ik: List[IntArr], iik: List[List[IntArr]], 
+                     mu0: FloatArr, tau0: FloatArr, 
+                     tau: List[FloatArr], lam: FloatArr, ome: np.random.Generator) -> List[FloatArr]:
 
     f2v0 = [prop_leaf_f2v_lm(y_, lam_) for y_, lam_ in zip(y, lam)]
     v2f = prop_forw(f2v0, iik, tau0, tau)
@@ -33,7 +38,7 @@ def sample_nested_lm(y: List[LmSuffStat], ik: List[np.ndarray], iik: List[List[n
     return bet
 
 
-def prop_forw(f2v0: List[F2V], iik: List[List[np.ndarray]], tau0: np.ndarray, tau: List[np.ndarray]
+def prop_forw(f2v0: List[F2V], iik: List[List[IntArr]], tau0: FloatArr, tau: List[FloatArr]
               ) -> List[List[V2F]]:
 
     f2v = [f2v0]
@@ -52,7 +57,7 @@ def prop_leaf_f2v_lm(y: LmSuffStat, lam: float) -> F2V:
     return F2V(p, u)
 
 
-def prop_f2v(v2f: V2F, tau: np.ndarray) -> F2V:
+def prop_f2v(v2f: V2F, tau: FloatArr) -> F2V:
 
     coefs = tau @ v2f.cf_cov.T @ v2f.cf_cov
     p = coefs @ v2f.p
@@ -60,7 +65,7 @@ def prop_f2v(v2f: V2F, tau: np.ndarray) -> F2V:
     return F2V(p, u)
 
 
-def prop_v2f(f2v: List[F2V], iik: List[np.ndarray], tau: np.ndarray) -> List[V2F]:
+def prop_v2f(f2v: List[F2V], iik: List[IntArr], tau: FloatArr) -> List[V2F]:
 
     def prop_v2f_inner(msg: List[F2V]) -> V2F:
 
@@ -72,8 +77,8 @@ def prop_v2f(f2v: List[F2V], iik: List[np.ndarray], tau: np.ndarray) -> List[V2F
     return [prop_v2f_inner([f2v[i] for i in iik_]) for iik_ in iik]
 
 
-def sample_backw(v2f: List[List[V2F]], ik: List[np.ndarray], mu0: np.ndarray, tau0: np.ndarray, tau: List[np.ndarray], 
-                 ome: np.random.Generator) -> List[np.ndarray]:
+def sample_backw(v2f: List[List[V2F]], ik: List[IntArr], mu0: FloatArr, tau0: FloatArr, tau: List[FloatArr], 
+                 ome: np.random.Generator) -> List[FloatArr]:
 
     bet = [sample_node(v2f[-1][0], mu0, tau0, ome)[np.newaxis]]
     for v2f_, tau_, ik_ in list(zip(v2f[:-1], tau, ik + [np.int_(np.zeros(len(v2f[-2])))]))[::-1]:
@@ -81,7 +86,7 @@ def sample_backw(v2f: List[List[V2F]], ik: List[np.ndarray], mu0: np.ndarray, ta
     return bet[::-1]
 
 
-def sample_node(v2f: V2F, mu: np.ndarray, tau: np.ndarray, ome: np.random.Generator) -> np.ndarray:
+def sample_node(v2f: V2F, mu: FloatArr, tau: FloatArr, ome: np.random.Generator) -> FloatArr:
 
     z = ome.standard_normal(len(mu))
     return v2f.cf_cov.T @ (v2f.cf_cov @ (v2f.u + tau @ mu) + z)

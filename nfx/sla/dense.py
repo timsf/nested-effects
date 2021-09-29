@@ -1,22 +1,27 @@
 from typing import List, NamedTuple, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 import scipy.linalg
 import scipy.sparse
 import sksparse.cholmod
 
 
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+
+
 class LmSuffStat(NamedTuple):
-    row_ix: np.ndarray
-    col_ix: np.ndarray
-    n_offspring: np.ndarray
-    cxx: np.ndarray
-    cxy: np.ndarray
+    row_ix: FloatArr
+    col_ix: FloatArr
+    n_offspring: FloatArr
+    cxx: FloatArr
+    cxy: FloatArr
 
 
-def sample_nested_lm(y: LmSuffStat, ik: List[np.ndarray], mu0: np.ndarray, tau0: np.ndarray, tau: List[np.ndarray], 
-                     lam: np.ndarray, ome: np.random.Generator) -> List[np.ndarray]:
+def sample_nested_lm(y: LmSuffStat, ik: List[IntArr], mu0: FloatArr, tau0: FloatArr, tau: List[FloatArr], 
+                     lam: FloatArr, ome: np.random.Generator) -> List[FloatArr]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -32,7 +37,7 @@ def sample_nested_lm(y: LmSuffStat, ik: List[np.ndarray], mu0: np.ndarray, tau0:
     return bet
 
 
-def prepare_sparse_indices(ik: List[np.ndarray], dim: int) -> Tuple[np.ndarray, np.ndarray]:
+def prepare_sparse_indices(ik: List[IntArr], dim: int) -> Tuple[IntArr, IntArr]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -52,7 +57,7 @@ def prepare_sparse_indices(ik: List[np.ndarray], dim: int) -> Tuple[np.ndarray, 
     return row_ix, col_ix
 
 
-def fill_precision(y: LmSuffStat, ik: List[np.ndarray], tau0: np.ndarray, tau: List[np.ndarray], lam: np.ndarray
+def fill_precision(y: LmSuffStat, ik: List[IntArr], tau0: FloatArr, tau: List[FloatArr], lam: FloatArr
                    ) -> scipy.sparse.coo_matrix:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]

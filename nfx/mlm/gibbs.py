@@ -1,6 +1,7 @@
 from typing import Callable, Iterator, List, Optional, Tuple
 
 import numpy as np
+import numpy.typing as npt
 
 import nfx.lm.gibbs
 import nfx.mlm.process
@@ -8,16 +9,18 @@ import nfx.bprop.dense
 import nfx.sla.dense
 
 
-LatentFunc = Callable[[np.ndarray, np.random.Generator], np.ndarray]
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+LatentFunc = Callable[[FloatArr, np.random.Generator], FloatArr]
 
 
-def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
-                     sample_latent: LatentFunc, mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
-                     prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]], 
+def sample_posterior(y: FloatArr, x: FloatArr, ik: List[IntArr],
+                     sample_latent: LatentFunc, mu0: Optional[FloatArr], tau0: Optional[FloatArr],
+                     prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]], 
                      prior_n_lam: Optional[float], prior_est_lam: Optional[float],
-                     init: Optional[Tuple[List[np.ndarray], List[np.ndarray], float, np.ndarray]], bprop: bool,
+                     init: Optional[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]], bprop: bool,
                      ome: np.random.Generator
-                     ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], float, np.ndarray]]:
+                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -58,7 +61,7 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
         yield bet, tau, lam, eta
 
 
-def update_resid(y: np.ndarray, x: np.ndarray, bet: np.ndarray, eta: np.ndarray, 
+def update_resid(y: FloatArr, x: FloatArr, bet: FloatArr, eta: FloatArr, 
                  prior_n: float, prior_est: float, ome: np.random.Generator) -> float:
 
     ssq_eps = np.sum(np.square(y - bet @ x.T) * eta)
@@ -67,7 +70,7 @@ def update_resid(y: np.ndarray, x: np.ndarray, bet: np.ndarray, eta: np.ndarray,
     return prior_est if np.isinf(prior_n) else ome.gamma(post_n / 2, 2 / (post_n * post_est))
 
 
-def update_latent(y: np.ndarray, x: np.ndarray, bet: np.ndarray, lam: float, 
-                  sample_latent: LatentFunc, ome: np.random.Generator) -> np.ndarray:
+def update_latent(y: FloatArr, x: FloatArr, bet: FloatArr, lam: float, 
+                  sample_latent: LatentFunc, ome: np.random.Generator) -> FloatArr:
 
     return sample_latent(np.square(y - bet @ x.T) * lam, ome)

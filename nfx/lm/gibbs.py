@@ -1,6 +1,7 @@
 from typing import Iterator, List, Tuple
 
 import numpy as np
+import numpy.typing as npt
 import scipy.stats
 
 import nfx.lm.process
@@ -9,13 +10,17 @@ import nfx.sla.dense
 import nfx.misc.linalg
 
 
-def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray], 
-                     mu0: np.ndarray = None, tau0: np.ndarray = None,
-                     prior_n_tau: np.ndarray = None, prior_est_tau: List[np.ndarray] = None,
-                     prior_n_lam: np.ndarray = None, prior_est_lam: np.ndarray = None,
-                     init: Tuple[List[np.ndarray], List[np.ndarray], np.ndarray] = None, bprop: bool = False, 
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+
+
+def sample_posterior(y: FloatArr, x: FloatArr, ik: List[IntArr], 
+                     mu0: FloatArr = None, tau0: FloatArr = None,
+                     prior_n_tau: FloatArr = None, prior_est_tau: List[FloatArr] = None,
+                     prior_n_lam: FloatArr = None, prior_est_lam: FloatArr = None,
+                     init: Tuple[List[FloatArr], List[FloatArr], FloatArr] = None, bprop: bool = False, 
                      ome: np.random.Generator = np.random.default_rng()
-                     ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], np.ndarray]]:
+                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr], FloatArr]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -55,8 +60,8 @@ def sample_posterior(y: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
         yield bet, tau, lam
 
 
-def update_scale(ik: List[np.ndarray], bet: List[np.ndarray], prior_n: np.ndarray, prior_est: List[np.ndarray], 
-                 ome: np.random.Generator) -> List[np.ndarray]:
+def update_scale(ik: List[IntArr], bet: List[FloatArr], prior_n: FloatArr, prior_est: List[FloatArr], 
+                 ome: np.random.Generator) -> List[FloatArr]:
 
     gam = [bet1 - bet0[ik_] for bet1, bet0, ik_ in zip(bet, bet[1:], ik + [np.int_(np.zeros(len(bet[-2])))])]
     post_n = prior_n + np.int_([len(ik_) for ik_ in ik] + [max(ik[-1]) + 1])
@@ -69,8 +74,8 @@ def update_scale(ik: List[np.ndarray], bet: List[np.ndarray], prior_n: np.ndarra
     return tau
 
 
-def update_resid(dim_y: int, cyy: np.ndarray, cxx: np.ndarray, cxy: np.ndarray, bet: np.ndarray, 
-                 prior_n: np.ndarray, prior_est: np.ndarray, ome: np.random.Generator) -> np.ndarray:
+def update_resid(dim_y: int, cyy: FloatArr, cxx: FloatArr, cxy: FloatArr, bet: FloatArr, 
+                 prior_n: FloatArr, prior_est: FloatArr, ome: np.random.Generator) -> FloatArr:
 
     ssq_resid = cyy + np.sum((bet @ cxx) * bet, 1) - 2 * np.sum(bet * cxy, 1)
     post_n = prior_n + dim_y

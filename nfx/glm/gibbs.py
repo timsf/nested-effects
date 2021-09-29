@@ -1,6 +1,7 @@
 from typing import Callable, Iterator, List, Optional, Tuple
 
 import numpy as np
+import numpy.typing as npt
 from scipy.optimize import root_scalar
 
 import nfx.lm.gibbs
@@ -10,17 +11,19 @@ import nfx.bprop.dense
 import nfx.sla.dense
 
 
-PartFunc = Callable[[np.ndarray], Tuple[np.ndarray, np.ndarray, np.ndarray]]
-BaseFunc = Callable[[np.ndarray, np.ndarray, np.ndarray, float], Tuple[float, float, float]]
+IntArr = npt.NDArray[np.int_]
+FloatArr = npt.NDArray[np.float_]
+PartFunc = Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]]
+BaseFunc = Callable[[FloatArr, FloatArr, FloatArr, float], Tuple[float, float, float]]
 
 
-def sample_disp_posterior(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
+def sample_disp_posterior(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr],
                           eval_part: PartFunc, eval_base: BaseFunc,
-                          mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
-                          prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]],
+                          mu0: Optional[FloatArr], tau0: Optional[FloatArr],
+                          prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]],
                           prior_n_phi: Optional[float], prior_est_phi: Optional[float],
-                          init: Optional[Tuple[List[np.ndarray], List[np.ndarray], float]], bprop: bool, 
-                          ome: np.random.Generator) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray], float]]:
+                          init: Optional[Tuple[List[FloatArr], List[FloatArr], float]], bprop: bool, 
+                          ome: np.random.Generator) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -67,11 +70,11 @@ def sample_disp_posterior(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.n
         yield [bet0] + bet, tau, phi
 
 
-def sample_posterior(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray], eval_part: PartFunc,
-                     mu0: Optional[np.ndarray], tau0: Optional[np.ndarray],
-                     prior_n_tau: Optional[np.ndarray], prior_est_tau: Optional[List[np.ndarray]],
-                     init: Optional[Tuple[List[np.ndarray], List[np.ndarray]]], bprop: bool, ome: np.random.Generator
-                     ) -> Iterator[Tuple[List[np.ndarray], List[np.ndarray]]]:
+def sample_posterior(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr], eval_part: PartFunc,
+                     mu0: Optional[FloatArr], tau0: Optional[FloatArr],
+                     prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]],
+                     init: Optional[Tuple[List[FloatArr], List[FloatArr]]], bprop: bool, ome: np.random.Generator
+                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr]]]:
 
     def eval_base(_, __, ___, ____): return (0, 0, 0)
     return (the[:-1] for the in
@@ -79,11 +82,11 @@ def sample_posterior(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.n
                                   prior_est_tau, np.inf, 1, init + (1,) if init is not None else init, bprop, ome))
 
 
-def update_leaves(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndarray],
-                  bet0: np.ndarray, bet: List[np.ndarray], tau: List[np.ndarray], phi: float, eval_part: PartFunc,
-                  sampler: nfx.glm.metropolis.LatentGaussSampler, ome: np.random.Generator) -> np.ndarray:
+def update_leaves(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr],
+                  bet0: FloatArr, bet: List[FloatArr], tau: List[FloatArr], phi: float, eval_part: PartFunc,
+                  sampler: nfx.glm.metropolis.LatentGaussSampler, ome: np.random.Generator) -> FloatArr:
 
-    def eval_log_f(b0: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+    def eval_log_f(b0: FloatArr) -> Tuple[FloatArr, FloatArr, FloatArr]:
         log_p, d_log_p, d2_log_p = eval_loglik(y1, n, x, b0, eval_part)
         return log_p / phi, d_log_p / phi, d2_log_p / phi
 
@@ -92,7 +95,7 @@ def update_leaves(y1: np.ndarray, n: np.ndarray, x: np.ndarray, ik: List[np.ndar
     return new_bet0
 
 
-def update_dispersion(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarray, bet0: np.ndarray, phi: float,
+def update_dispersion(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, bet0: FloatArr, phi: float,
                       eval_part: PartFunc, eval_base: BaseFunc, prior_n: float, prior_est: float,
                       ome: np.random.Generator) -> float:
 
@@ -121,8 +124,8 @@ def update_dispersion(y1: np.ndarray, y2: np.ndarray, n: np.ndarray, x: np.ndarr
     return ome.uniform(lb, ub)
 
 
-def eval_loglik(y1: np.ndarray, n: np.ndarray, x: np.ndarray, bet0: np.ndarray, eval_part: PartFunc
-                ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+def eval_loglik(y1: FloatArr, n: FloatArr, x: FloatArr, bet0: FloatArr, eval_part: PartFunc
+                ) -> Tuple[FloatArr, FloatArr, FloatArr]:
 
     eta = bet0 @ x.T
     part, d_part, d2_part = eval_part(eta)
