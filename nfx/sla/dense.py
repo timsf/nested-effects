@@ -20,8 +20,15 @@ class LmSuffStat(NamedTuple):
     cxy: FloatArr
 
 
-def sample_nested_lm(y: LmSuffStat, ik: List[IntArr], mu0: FloatArr, tau0: FloatArr, tau: List[FloatArr], 
-                     lam: FloatArr, ome: np.random.Generator) -> List[FloatArr]:
+def sample_nested_lm(
+    y: LmSuffStat,
+    ik: List[IntArr],
+    mu0: FloatArr,
+    tau0: FloatArr,
+    tau: List[FloatArr],
+    lam: FloatArr,
+    ome: np.random.Generator,
+) -> List[FloatArr]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -32,7 +39,7 @@ def sample_nested_lm(y: LmSuffStat, ik: List[IntArr], mu0: FloatArr, tau0: Float
     z_flat = ome.standard_normal(len(prior_weight_flat))
     bet_flat = lcf_prec_flat.solve_Lt(lcf_prec_flat.solve_L(post_weight_flat + prior_weight_flat, False) + z_flat, False)
 
-    bet = [np.reshape(bet_, (jk_, len(mu0))) for jk_, bet_ 
+    bet = [np.reshape(bet_, (jk_, len(mu0))) for jk_, bet_
            in zip(jk, np.split(bet_flat, np.cumsum(jk[:-1]) * len(mu0)))]
     return bet
 
@@ -42,10 +49,10 @@ def prepare_sparse_indices(ik: List[IntArr], dim: int) -> Tuple[IntArr, IntArr]:
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
     on_row_block_ix = np.arange(sum(jk))
-    block_offsets = np.hstack([ik_ + jk_ for ik_, jk_ 
+    block_offsets = np.hstack([ik_ + jk_ for ik_, jk_
                                in zip(ik + [np.int_(np.zeros(max(ik[-1] + 1)))], np.cumsum(jk))])
     off_row_block_ix = block_offsets
-    off_col_block_ix = on_row_block_ix[:-1] 
+    off_col_block_ix = on_row_block_ix[:-1]
 
     on_row_ix = np.hstack([ix_ * dim + np.tile(np.arange(dim), dim) for ix_ in on_row_block_ix])
     on_col_ix = np.hstack([ix_ * dim + np.repeat(np.arange(dim), dim) for ix_ in on_row_block_ix])
@@ -57,8 +64,13 @@ def prepare_sparse_indices(ik: List[IntArr], dim: int) -> Tuple[IntArr, IntArr]:
     return row_ix, col_ix
 
 
-def fill_precision(y: LmSuffStat, ik: List[IntArr], tau0: FloatArr, tau: List[FloatArr], lam: FloatArr
-                   ) -> scipy.sparse.coo_matrix:
+def fill_precision(
+    y: LmSuffStat,
+    ik: List[IntArr],
+    tau0: FloatArr,
+    tau: List[FloatArr],
+    lam: FloatArr,
+) -> scipy.sparse.coo_matrix:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 

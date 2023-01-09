@@ -9,7 +9,7 @@
 
 ## Instructions for Ubuntu/OSX
 
-0. Install the generic dependencies: `Python 3.8`, `pip`, `pipenv`, `git`. Also install `suite-sparse`. On Ubuntu:
+0. Install the generic dependencies: `Python 3.8`, `pip`, `poetry`, `git`. Also install `suite-sparse`. On Ubuntu:
 
     ```shell
     sudo apt-get install libsuitesparse-dev
@@ -37,13 +37,13 @@
 3. Create a virtual environment and install dependencies
 
     ```shell
-    pipenv install --dev
+    poetry install
     ```
 
 4. Start a shell within the virtual environment
 
     ```shell
-    pipenv shell
+    poetry shell
     ```
 
 5. Start the `Jupyter` server

@@ -5,6 +5,7 @@ from scipy.stats import wishart
 
 import nfx.glm.gaussian
 import nfx.glm.poisson
+import nfx.custom.binomial
 
 
 def sample_tree(j, ome):
@@ -64,4 +65,15 @@ def test_gaussian(j=np.array([1000, 100, 10]), l=3, t=100, lam=1, n_samples=int(
     y2 = np.square(y1)
     n = np.ones_like(y1)
     sampler = nfx.glm.gaussian.sample_posterior(y1, y2, n, x, i, ome=ome)
+    samples = [next(sampler) for _ in range(n_samples)]
+
+
+def test_latent_binomial(j=np.array([1000, 100, 10]), l=3, t=100, lam=1, n_samples=int(1e3), seed=0):
+
+    ome = np.random.default_rng(seed)
+    data, params, hyper = sample_fixture(j, l, t, lam, ome)
+    y1, x, i = data
+    y = np.exp(y1 / 10)
+    n = np.ones_like(y)
+    sampler = nfx.custom.binomial.sample_posterior(y, n, x, i, ome=ome)
     samples = [next(sampler) for _ in range(n_samples)]

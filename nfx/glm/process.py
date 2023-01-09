@@ -11,17 +11,25 @@ IntArr = npt.NDArray[np.int_]
 FloatArr = npt.NDArray[np.float_]
 
 
-def process_bprop(bet0: FloatArr, tau_: FloatArr, ik: List[IntArr], iik: List[List[IntArr]]
-                  ) -> List[nfx.bprop.dense.LmSuffStat]:
+def process_bprop(
+    bet0: FloatArr,
+    tau_: FloatArr,
+    ik: List[IntArr],
+    iik: List[List[IntArr]]
+) -> List[nfx.bprop.dense.LmSuffStat]:
 
     eta, s1, s2 = zip(*[(len(iik_), np.mean(bet0[iik_], 0), np.sum(np.mean(bet0[iik_], 0) ** 2)) for iik_ in iik[0]])
-    return [nfx.bprop.dense.LmSuffStat(s2_, n_ * tau_, n_ * (tau_ @ s1_), len(s1_)) 
+    return [nfx.bprop.dense.LmSuffStat(s2_, n_ * tau_, n_ * (tau_ @ s1_), len(s1_))
             for n_, s1_, s2_ in zip(eta, s1, s2)]
 
 
-def process_sla(bet0: FloatArr, tau_: FloatArr, ik: List[IntArr], iik: List[List[IntArr]]
-                ) -> nfx.sla.dense.LmSuffStat:
-    
+def process_sla(
+    bet0: FloatArr,
+    tau_: FloatArr,
+    ik: List[IntArr],
+    iik: List[List[IntArr]],
+) -> nfx.sla.dense.LmSuffStat:
+
     eta = np.array([len(iik_) for iik_ in iik[0]])
     y = np.array([np.mean(bet0[iik_], 0) for iik_ in iik[0]])
     n_offspring = [[len(iik__) for iik__ in iik_] for iik_ in iik[1:]] + [[len(iik[-1])]]

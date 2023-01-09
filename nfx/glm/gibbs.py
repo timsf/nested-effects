@@ -17,13 +17,24 @@ PartFunc = Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]]
 BaseFunc = Callable[[FloatArr, FloatArr, FloatArr, float], Tuple[float, float, float]]
 
 
-def sample_disp_posterior(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr],
-                          eval_part: PartFunc, eval_base: BaseFunc,
-                          mu0: Optional[FloatArr], tau0: Optional[FloatArr],
-                          prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]],
-                          prior_n_phi: Optional[float], prior_est_phi: Optional[float],
-                          init: Optional[Tuple[List[FloatArr], List[FloatArr], float]], bprop: bool, 
-                          ome: np.random.Generator) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float]]:
+def sample_disp_posterior(
+    y1: FloatArr,
+    y2: FloatArr,
+    n: FloatArr,
+    x: FloatArr,
+    ik: List[IntArr],
+    eval_part: PartFunc,
+    eval_base: BaseFunc,
+    mu0: Optional[FloatArr],
+    tau0: Optional[FloatArr],
+    prior_n_tau: Optional[FloatArr],
+    prior_est_tau: Optional[List[FloatArr]],
+    prior_n_phi: Optional[float],
+    prior_est_phi: Optional[float],
+    init: Optional[Tuple[List[FloatArr], List[FloatArr], float]],
+    bprop: bool,
+    ome: np.random.Generator,
+) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -51,7 +62,7 @@ def sample_disp_posterior(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, 
         tau, phi = init[1:]
 
     iik = nfx.glm.process.reverse_edges(ik)
-    sampler = nfx.glm.metropolis.LatentGaussSampler(y1.shape[0], x.shape[1])
+    sampler = nfx.glm.metropolis.LatentGaussSampler(np.sum(n, 1))
 
     while True:
         bet0 = update_leaves(y1, n, x, ik, bet0, bet, tau, phi, eval_part, sampler, ome)
@@ -70,11 +81,20 @@ def sample_disp_posterior(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, 
         yield [bet0] + bet, tau, phi
 
 
-def sample_posterior(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr], eval_part: PartFunc,
-                     mu0: Optional[FloatArr], tau0: Optional[FloatArr],
-                     prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]],
-                     init: Optional[Tuple[List[FloatArr], List[FloatArr]]], bprop: bool, ome: np.random.Generator
-                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr]]]:
+def sample_posterior(
+    y1: FloatArr,
+    n: FloatArr,
+    x: FloatArr,
+    ik: List[IntArr],
+    eval_part: PartFunc,
+    mu0: Optional[FloatArr],
+    tau0: Optional[FloatArr],
+    prior_n_tau: Optional[FloatArr],
+    prior_est_tau: Optional[List[FloatArr]],
+    init: Optional[Tuple[List[FloatArr], List[FloatArr]]],
+    bprop: bool,
+    ome: np.random.Generator,
+) -> Iterator[Tuple[List[FloatArr], List[FloatArr]]]:
 
     def eval_base(_, __, ___, ____): return (0, 0, 0)
     return (the[:-1] for the in
@@ -82,22 +102,41 @@ def sample_posterior(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr], e
                                   prior_est_tau, np.inf, 1, init + (1,) if init is not None else init, bprop, ome))
 
 
-def update_leaves(y1: FloatArr, n: FloatArr, x: FloatArr, ik: List[IntArr],
-                  bet0: FloatArr, bet: List[FloatArr], tau: List[FloatArr], phi: float, eval_part: PartFunc,
-                  sampler: nfx.glm.metropolis.LatentGaussSampler, ome: np.random.Generator) -> FloatArr:
+def update_leaves(
+    y1: FloatArr,
+    n: FloatArr,
+    x: FloatArr,
+    ik: List[IntArr],
+    bet0: FloatArr,
+    bet: List[FloatArr],
+    tau: List[FloatArr],
+    phi: float,
+    eval_part: PartFunc,
+    sampler: nfx.glm.metropolis.LatentGaussSampler,
+    ome: np.random.Generator,
+) -> FloatArr:
 
     def eval_log_f(b0: FloatArr) -> Tuple[FloatArr, FloatArr, FloatArr]:
         log_p, d_log_p, d2_log_p = eval_loglik(y1, n, x, b0, eval_part)
         return log_p / phi, d_log_p / phi, d2_log_p / phi
 
-    #l_tau, u = np.linalg.eigh(tau[0])
     new_bet0 = sampler.sample(bet0, bet[0][ik[0]], tau[0], eval_log_f, ome)
     return new_bet0
 
 
-def update_dispersion(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, bet0: FloatArr, phi: float,
-                      eval_part: PartFunc, eval_base: BaseFunc, prior_n: float, prior_est: float,
-                      ome: np.random.Generator) -> float:
+def update_dispersion(
+    y1: FloatArr,
+    y2: FloatArr,
+    n: FloatArr,
+    x: FloatArr,
+    bet0: FloatArr,
+    phi: float,
+    eval_part: PartFunc,
+    eval_base: BaseFunc,
+    prior_n: float,
+    prior_est: float,
+    ome: np.random.Generator,
+) -> float:
 
     def eval_log_p(phi_: float, log_v: float) -> Tuple[float, float, float]:
         log_g, d_log_g, d2_log_g = eval_base(y1, y2, n, phi_)
@@ -124,14 +163,21 @@ def update_dispersion(y1: FloatArr, y2: FloatArr, n: FloatArr, x: FloatArr, bet0
     return ome.uniform(lb, ub)
 
 
-def eval_loglik(y1: FloatArr, n: FloatArr, x: FloatArr, bet0: FloatArr, eval_part: PartFunc
-                ) -> Tuple[FloatArr, FloatArr, FloatArr]:
+def eval_loglik(
+    y1: FloatArr,
+    n: FloatArr,
+    x: FloatArr,
+    bet0: FloatArr,
+    eval_part: PartFunc,
+) -> Tuple[FloatArr, FloatArr, FloatArr]:
 
     eta = bet0 @ x.T
     part, d_part, d2_part = eval_part(eta)
     log_f = np.sum(y1 * eta - n * part, 1)
     d_log_f = (y1 - n * d_part) @ x
-    d2_log_f = -(n * d2_part) @ np.square(x)
+    # d2_log_f = -(n * d2_part) @ np.square(x)
+    sqrt_d2_log_f = np.sqrt(n * d2_part)[:, :, np.newaxis] * x[np.newaxis]
+    d2_log_f = -np.array([x_.T @ x_ for x_ in sqrt_d2_log_f])
     return log_f, d_log_f, d2_log_f
 
 

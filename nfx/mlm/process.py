@@ -13,14 +13,14 @@ FloatArr = npt.NDArray[np.float_]
 
 def process_bprop(y: FloatArr, x: FloatArr, eta: FloatArr) -> List[nfx.bprop.dense.LmSuffStat]:
 
-    ysuff = [nfx.bprop.dense.LmSuffStat(np.sum(np.square(y_)), (x.T * eta_) @ x, (y_ * eta_) @ x, len(y_)) 
+    ysuff = [nfx.bprop.dense.LmSuffStat(np.sum(np.square(y_)), (x.T * eta_) @ x, (y_ * eta_) @ x, len(y_))
              for y_, eta_ in zip(y, eta)]
     return ysuff
 
 
 def process_sla(y: FloatArr, x: FloatArr, eta: FloatArr, ik: List[IntArr], iik: List[List[IntArr]]
                 ) -> nfx.sla.dense.LmSuffStat:
-    
+
     n_offspring = [[len(iik__) for iik__ in iik_] for iik_ in iik] + [[len(iik[-1])]]
     n_offspring_flat = np.repeat(np.hstack(n_offspring), x.shape[1] ** 2)
     row_ix, col_ix = nfx.sla.dense.prepare_sparse_indices(ik, x.shape[1])
