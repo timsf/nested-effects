@@ -9,7 +9,7 @@ import sksparse.cholmod
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 
 
 class LmSuffStat(NamedTuple):

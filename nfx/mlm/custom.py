@@ -7,16 +7,23 @@ import nfx.mlm.gibbs
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 
 
-def sample_posterior(y: FloatArr, x: FloatArr, ik: List[IntArr],
-                     mu0: FloatArr = None, tau0: FloatArr = None,
-                     prior_n_tau: FloatArr = None, prior_est_tau: List[FloatArr] = None,
-                     prior_n_lam: float = 1, prior_est_lam: float = 1, prior_n_eta: FloatArr = None, 
-                     init: Tuple[List[FloatArr], List[FloatArr], float, FloatArr] = None,
-                     bprop: bool = False, ome: np.random.Generator = np.random.default_rng()
-                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
+def sample_posterior(
+    y: FloatArr, 
+    x: FloatArr, 
+    ik: List[IntArr],
+    mu0: FloatArr = None, 
+    tau0: FloatArr = None,
+    prior_n_tau: FloatArr = None, 
+    prior_est_tau: List[FloatArr] = None,
+    prior_n_lam: float = 1, 
+    prior_est_lam: float = 1, 
+    prior_n_eta: FloatArr = None, 
+    init: Tuple[List[FloatArr], List[FloatArr], float, FloatArr] = None,
+    bprop: bool = False, ome: np.random.Generator = np.random.default_rng(),
+) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
 
     def bound_sample_latent(sq_eps_: FloatArr, ome_: np.random.Generator) -> FloatArr:
         return sample_latent(sq_eps_, prior_n_eta, ome_)

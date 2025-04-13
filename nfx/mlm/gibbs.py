@@ -10,17 +10,25 @@ import nfx.sla.dense
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 LatentFunc = Callable[[FloatArr, np.random.Generator], FloatArr]
 
 
-def sample_posterior(y: FloatArr, x: FloatArr, ik: List[IntArr],
-                     sample_latent: LatentFunc, mu0: Optional[FloatArr], tau0: Optional[FloatArr],
-                     prior_n_tau: Optional[FloatArr], prior_est_tau: Optional[List[FloatArr]], 
-                     prior_n_lam: Optional[float], prior_est_lam: Optional[float],
-                     init: Optional[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]], bprop: bool,
-                     ome: np.random.Generator
-                     ) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
+def sample_posterior(
+    y: FloatArr, 
+    x: FloatArr, 
+    ik: List[IntArr],
+    sample_latent: LatentFunc, 
+    mu0: Optional[FloatArr], 
+    tau0: Optional[FloatArr],
+    prior_n_tau: Optional[FloatArr], 
+    prior_est_tau: Optional[List[FloatArr]], 
+    prior_n_lam: Optional[float], 
+    prior_est_lam: Optional[float],
+    init: Optional[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]], 
+    bprop: bool,
+    ome: np.random.Generator,
+) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])

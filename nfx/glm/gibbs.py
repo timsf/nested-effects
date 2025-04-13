@@ -12,7 +12,7 @@ import nfx.sla.dense
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 PartFunc = Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]]
 BaseFunc = Callable[[FloatArr, FloatArr, FloatArr, float], Tuple[float, float, float]]
 
@@ -74,8 +74,8 @@ def sample_disp_posterior(
             asuff_sla = nfx.glm.process.process_sla(bet0, tau[0], ik, iik)
             bet = nfx.sla.dense.sample_nested_lm(
                 asuff_sla, ik[1:], mu0, tau0, tau[1:], np.ones(len(iik[0])), ome)
-        if not np.all(np.isinf(prior_n_tau)):
-            tau = nfx.lm.gibbs.update_scale(ik, [bet0] + bet, prior_n_tau, prior_est_tau, ome)
+        # if not np.all(np.isinf(prior_n_tau)):
+        #     tau = nfx.lm.gibbs.update_scale(ik, [bet0] + bet, prior_n_tau, prior_est_tau, ome)
         if not np.isinf(prior_n_phi):
             phi = update_dispersion(y1, y2, n, x, bet0, phi, eval_part, eval_base, prior_n_phi, prior_est_phi, ome)
         yield [bet0] + bet, tau, phi

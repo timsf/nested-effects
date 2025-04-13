@@ -7,7 +7,7 @@ from nfx.glm import gibbs
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 
 
 def sample_posterior(

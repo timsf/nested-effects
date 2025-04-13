@@ -4,7 +4,7 @@ import numpy as np
 import numpy.typing as npt
 
 
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 
 
 def sample_marginal_1o(

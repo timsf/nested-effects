@@ -2,6 +2,7 @@ from typing import Iterator, List, Tuple
 
 import numpy as np
 import numpy.typing as npt
+from scipy.special import expit
 
 from nfx.glm import gibbs
 
@@ -29,6 +30,5 @@ def sample_posterior(
 
 def eval_part(eta: FloatArr) -> Tuple[FloatArr, FloatArr, FloatArr]:
 
-    fitted = np.exp(eta)
-    fitted = np.where(np.isinf(fitted), np.nan, fitted)
-    return fitted, fitted, fitted
+    mu = expit(eta)
+    return np.logaddexp(0, eta), mu, mu * (1 - mu)

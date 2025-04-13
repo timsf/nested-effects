@@ -8,7 +8,7 @@ import nfx.sla.dense
 
 
 IntArr = npt.NDArray[np.int_]
-FloatArr = npt.NDArray[np.float_]
+FloatArr = npt.NDArray[np.float64]
 
 
 def eval_suff_stat(y: FloatArr, x: FloatArr) -> Tuple[int, FloatArr, FloatArr, FloatArr]:
