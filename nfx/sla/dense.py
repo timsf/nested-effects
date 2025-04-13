@@ -1,9 +1,8 @@
-from typing import List, NamedTuple, Tuple
+from typing import NamedTuple
 
 import numpy as np
 import numpy.typing as npt
 
-import scipy.linalg
 import scipy.sparse
 import sksparse.cholmod
 
@@ -22,13 +21,13 @@ class LmSuffStat(NamedTuple):
 
 def sample_nested_lm(
     y: LmSuffStat,
-    ik: List[IntArr],
+    ik: list[IntArr],
     mu0: FloatArr,
     tau0: FloatArr,
-    tau: List[FloatArr],
+    tau: list[FloatArr],
     lam: FloatArr,
     ome: np.random.Generator,
-) -> List[FloatArr]:
+) -> list[FloatArr]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -44,7 +43,7 @@ def sample_nested_lm(
     return bet
 
 
-def prepare_sparse_indices(ik: List[IntArr], dim: int) -> Tuple[IntArr, IntArr]:
+def prepare_sparse_indices(ik: list[IntArr], dim: int) -> tuple[IntArr, IntArr]:
 
     jk = [len(ik_) for ik_ in ik] + [np.max(ik[-1]) + 1, 1]
 
@@ -66,9 +65,9 @@ def prepare_sparse_indices(ik: List[IntArr], dim: int) -> Tuple[IntArr, IntArr]:
 
 def fill_precision(
     y: LmSuffStat,
-    ik: List[IntArr],
+    ik: list[IntArr],
     tau0: FloatArr,
-    tau: List[FloatArr],
+    tau: list[FloatArr],
     lam: FloatArr,
 ) -> scipy.sparse.coo_matrix:
 

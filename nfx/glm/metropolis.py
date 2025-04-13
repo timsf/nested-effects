@@ -1,4 +1,4 @@
-from typing import Callable, Optional, Tuple
+from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
@@ -12,9 +12,9 @@ def sample_marginal_1o(
     mu: FloatArr,
     tau: FloatArr,
     delt: FloatArr,
-    f_log_f: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]],
+    f_log_f: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]],
     ome: np.random.Generator,
-) -> Tuple[FloatArr, FloatArr]:
+) -> tuple[FloatArr, FloatArr]:
 
     l, u = np.linalg.eigh(tau)
 
@@ -45,9 +45,9 @@ def sample_marginal_2o(
     mu: FloatArr,
     tau: FloatArr,
     delt: FloatArr,
-    f_log_f: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]],
+    f_log_f: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]],
     ome: np.random.Generator,
-) -> Tuple[FloatArr, FloatArr]:
+) -> tuple[FloatArr, FloatArr]:
 
     l, u = np.linalg.eigh(tau)
 
@@ -74,14 +74,14 @@ def sample_marginal_2o(
 
 def propose_2o(
     x: FloatArr,
-    y: Optional[FloatArr],
+    y: FloatArr | None,
     mu: FloatArr,
     tau: FloatArr,
     dx_log_f: FloatArr,
     d2x_log_f: FloatArr,
     delt: float,
     ome: np.random.Generator,
-) -> Tuple[FloatArr, float]:
+) -> tuple[FloatArr, float]:
 
     tau_x = tau - d2x_log_f
     try:
@@ -138,7 +138,7 @@ class LatentGaussSampler(object):
         x_nil: FloatArr,
         mu: FloatArr,
         tau: FloatArr,
-        f_log_f: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]],
+        f_log_f: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]],
         ome: np.random.Generator,
     ) -> FloatArr:
 

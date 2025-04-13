@@ -1,4 +1,4 @@
-from typing import Iterator, List, Tuple
+from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -12,22 +12,23 @@ import nfx.misc.linalg
 
 IntArr = npt.NDArray[np.int_]
 FloatArr = npt.NDArray[np.float64]
+ParamSpace = tuple[list[FloatArr], list[FloatArr], FloatArr]
 
 
 def sample_posterior(
     y: FloatArr,
     x: FloatArr,
-    ik: List[IntArr],
+    ik: list[IntArr],
     mu0: FloatArr = None,
     tau0: FloatArr = None,
     prior_n_tau: FloatArr = None,
-    prior_est_tau: List[FloatArr] = None,
+    prior_est_tau: list[FloatArr] = None,
     prior_n_lam: FloatArr = None,
     prior_est_lam: FloatArr = None,
-    init: Tuple[List[FloatArr], List[FloatArr], FloatArr] = None,
+    init: ParamSpace = None,
     bprop: bool = False,
     ome: np.random.Generator = np.random.default_rng(),
-) -> Iterator[Tuple[List[FloatArr], List[FloatArr], FloatArr]]:
+) -> Iterator[ParamSpace]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -68,12 +69,12 @@ def sample_posterior(
 
 
 def update_scale(
-    ik: List[IntArr],
-    bet: List[FloatArr],
+    ik: list[IntArr],
+    bet: list[FloatArr],
     prior_n: FloatArr,
-    prior_est: List[FloatArr],
+    prior_est: list[FloatArr],
     ome: np.random.Generator,
-) -> List[FloatArr]:
+) -> list[FloatArr]:
 
     gam = [bet1 - bet0[ik_] for bet1, bet0, ik_ in zip(bet, bet[1:], ik + [np.int_(np.zeros(len(bet[-2])))])]
     post_n = prior_n + np.int_([len(ik_) for ik_ in ik] + [max(ik[-1]) + 1])

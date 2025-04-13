@@ -1,4 +1,4 @@
-from typing import Callable, Tuple
+from typing import Callable
 
 import numpy as np
 import numpy.typing as npt
@@ -7,9 +7,14 @@ import numpy.typing as npt
 FloatArr = npt.NDArray[np.float64]
 
 
-def sample(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
-           f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]], ome: np.random.Generator
-           ) -> Tuple[FloatArr, FloatArr]:
+def sample(
+    x: FloatArr, 
+    mu: FloatArr, 
+    tau: FloatArr, 
+    sig: FloatArr,
+    f_log_p: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]], 
+    ome: np.random.Generator,
+) -> tuple[FloatArr, FloatArr]:
 
     x_log_p, mean_x, prec_x = ascend(x, mu, tau, sig, f_log_p)
     y = ome.normal(mean_x, 1 / np.sqrt(prec_x))
@@ -17,9 +22,13 @@ def sample(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
     return accept_reject(x, y, x_log_p, y_log_p, mean_x, mean_y, prec_x, prec_y, mu, tau, ome)
 
 
-def ascend(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
-                  f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]]
-                  ) -> Tuple[FloatArr, FloatArr, FloatArr]:
+def ascend(
+    x: FloatArr, 
+    mu: FloatArr, 
+    tau: FloatArr, 
+    sig: FloatArr,
+    f_log_p: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]],
+) -> tuple[FloatArr, FloatArr, FloatArr]:
 
     x_log_p, dx_log_p, d2x_log_p = f_log_p(x)
     a = 1 / (np.ones_like(x) / sig + tau - d2x_log_p)
@@ -28,9 +37,19 @@ def ascend(x: FloatArr, mu: FloatArr, tau: FloatArr, sig: FloatArr,
     return x_log_p, x_prime, x_hess
 
 
-def accept_reject(x: FloatArr, y: FloatArr, x_log_p: FloatArr, y_log_p: FloatArr,
-                  mean_x: FloatArr, mean_y: FloatArr, prec_x: FloatArr, prec_y: FloatArr,
-                  mu: FloatArr, tau: FloatArr, ome: np.random.Generator) -> Tuple[FloatArr, FloatArr]:
+def accept_reject(
+    x: FloatArr, 
+    y: FloatArr, 
+    x_log_p: FloatArr, 
+    y_log_p: FloatArr,
+    mean_x: FloatArr, 
+    mean_y: FloatArr, 
+    prec_x: FloatArr, 
+    prec_y: FloatArr,
+    mu: FloatArr, 
+    tau: FloatArr, 
+    ome: np.random.Generator,
+) -> tuple[FloatArr, FloatArr]:
 
     log_lik_ratio = y_log_p - x_log_p
     log_prior_odds = eval_norm(y, mu, tau) - eval_norm(x, mu, tau)
@@ -48,7 +67,12 @@ def eval_norm(x: FloatArr, mu: FloatArr, tau: FloatArr) -> FloatArr:
     return cons + kern
 
 
-def cond_norm(x: FloatArr, mu: FloatArr, tau: FloatArr, update: int):
+def cond_norm(
+    x: FloatArr, 
+    mu: FloatArr, 
+    tau: FloatArr, 
+    update: int,
+) -> tuple[FloatArr, FloatArr]:
 
     sig = np.linalg.inv(tau)
     x_cl = np.delete(x, update, 1)
@@ -66,9 +90,14 @@ class LatentGaussSampler(object):
         self.step = [[np.zeros(j)] for _ in range(l)]
         self.opt_prob = opt_prob
 
-    def sample(self, x_nil: FloatArr, mu: FloatArr, tau: FloatArr,
-               f_log_p: Callable[[FloatArr], Tuple[FloatArr, FloatArr, FloatArr]], ome: np.random.Generator
-               ) -> FloatArr:
+    def sample(
+        self, 
+        x_nil: FloatArr, 
+        mu: FloatArr, 
+        tau: FloatArr,
+        f_log_p: Callable[[FloatArr], tuple[FloatArr, FloatArr, FloatArr]], 
+        ome: np.random.Generator,
+    ) -> FloatArr:
 
         def f_log_p_cond(x_prime_cond: FloatArr):
             x_prime_ = np.copy(x_prime)

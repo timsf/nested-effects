@@ -1,5 +1,3 @@
-from typing import List
-
 import numpy as np
 import numpy.typing as npt
 
@@ -14,9 +12,9 @@ FloatArr = npt.NDArray[np.float64]
 def process_bprop(
     bet0: FloatArr,
     tau_: FloatArr,
-    ik: List[IntArr],
-    iik: List[List[IntArr]]
-) -> List[nfx.bprop.dense.LmSuffStat]:
+    ik: list[IntArr],
+    iik: list[list[IntArr]],
+) -> list[nfx.bprop.dense.LmSuffStat]:
 
     eta, s1, s2 = zip(*[(len(iik_), np.mean(bet0[iik_], 0), np.sum(np.mean(bet0[iik_], 0) ** 2)) for iik_ in iik[0]])
     return [nfx.bprop.dense.LmSuffStat(s2_, n_ * tau_, n_ * (tau_ @ s1_), len(s1_))
@@ -26,8 +24,8 @@ def process_bprop(
 def process_sla(
     bet0: FloatArr,
     tau_: FloatArr,
-    ik: List[IntArr],
-    iik: List[List[IntArr]],
+    ik: list[IntArr],
+    iik: list[list[IntArr]],
 ) -> nfx.sla.dense.LmSuffStat:
 
     eta = np.array([len(iik_) for iik_ in iik[0]])
@@ -40,6 +38,6 @@ def process_sla(
     return nfx.sla.dense.LmSuffStat(row_ix, col_ix, n_offspring_flat, cxx_flat, cxy_flat)
 
 
-def reverse_edges(ik: List[IntArr]) -> List[List[IntArr]]:
+def reverse_edges(ik: list[IntArr]) -> list[list[IntArr]]:
 
     return [[np.where(ik_ == i)[0] for i in range(max(ik_) + 1)] for ik_ in ik]

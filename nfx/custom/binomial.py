@@ -1,4 +1,4 @@
-from typing import Iterator, List, Tuple
+from typing import Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -18,15 +18,15 @@ def sample_posterior(
     y: FloatArr,
     n: FloatArr,
     x: FloatArr,
-    ik: List[IntArr],
+    ik: list[IntArr],
     mu0: FloatArr = None,
     tau0: FloatArr = None,
     prior_n_tau: FloatArr = None,
-    prior_est_tau: List[FloatArr] = None,
-    init: Tuple[List[FloatArr], List[FloatArr], FloatArr] = None,
+    prior_est_tau: list[FloatArr] = None,
+    init: tuple[list[FloatArr], list[FloatArr], FloatArr] = None,
     bprop: bool = False,
     ome: np.random.Generator = np.random.default_rng(),
-) -> Iterator[Tuple[List[FloatArr], List[FloatArr], FloatArr]]:
+) -> Iterator[tuple[list[FloatArr], list[FloatArr], FloatArr]]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])

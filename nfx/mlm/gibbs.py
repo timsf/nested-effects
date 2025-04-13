@@ -1,4 +1,4 @@
-from typing import Callable, Iterator, List, Optional, Tuple
+from typing import Callable, Iterator
 
 import numpy as np
 import numpy.typing as npt
@@ -12,23 +12,24 @@ import nfx.sla.dense
 IntArr = npt.NDArray[np.int_]
 FloatArr = npt.NDArray[np.float64]
 LatentFunc = Callable[[FloatArr, np.random.Generator], FloatArr]
+ParamSpace = tuple[list[FloatArr], list[FloatArr], float, FloatArr]
 
 
 def sample_posterior(
     y: FloatArr, 
     x: FloatArr, 
-    ik: List[IntArr],
+    ik: list[IntArr],
     sample_latent: LatentFunc, 
-    mu0: Optional[FloatArr], 
-    tau0: Optional[FloatArr],
-    prior_n_tau: Optional[FloatArr], 
-    prior_est_tau: Optional[List[FloatArr]], 
-    prior_n_lam: Optional[float], 
-    prior_est_lam: Optional[float],
-    init: Optional[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]], 
+    mu0: FloatArr | None, 
+    tau0: FloatArr | None,
+    prior_n_tau: FloatArr | None, 
+    prior_est_tau: list[FloatArr], 
+    prior_n_lam: float | None, 
+    prior_est_lam: float | None,
+    init: ParamSpace | None, 
     bprop: bool,
     ome: np.random.Generator,
-) -> Iterator[Tuple[List[FloatArr], List[FloatArr], float, FloatArr]]:
+) -> Iterator[ParamSpace]:
 
     if mu0 is None:
         mu0 = np.zeros(x.shape[1])
@@ -69,8 +70,15 @@ def sample_posterior(
         yield bet, tau, lam, eta
 
 
-def update_resid(y: FloatArr, x: FloatArr, bet: FloatArr, eta: FloatArr, 
-                 prior_n: float, prior_est: float, ome: np.random.Generator) -> float:
+def update_resid(
+    y: FloatArr, 
+    x: FloatArr, 
+    bet: FloatArr, 
+    eta: FloatArr, 
+    prior_n: float, 
+    prior_est: float, 
+    ome: np.random.Generator,
+) -> float:
 
     ssq_eps = np.sum(np.square(y - bet @ x.T) * eta)
     post_n = prior_n + np.prod(y.shape)
@@ -78,7 +86,13 @@ def update_resid(y: FloatArr, x: FloatArr, bet: FloatArr, eta: FloatArr,
     return prior_est if np.isinf(prior_n) else ome.gamma(post_n / 2, 2 / (post_n * post_est))
 
 
-def update_latent(y: FloatArr, x: FloatArr, bet: FloatArr, lam: float, 
-                  sample_latent: LatentFunc, ome: np.random.Generator) -> FloatArr:
+def update_latent(
+    y: FloatArr, 
+    x: FloatArr, 
+    bet: FloatArr, 
+    lam: float, 
+    sample_latent: LatentFunc, 
+    ome: np.random.Generator,
+) -> FloatArr:
 
     return sample_latent(np.square(y - bet @ x.T) * lam, ome)
